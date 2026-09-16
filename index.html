@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPOSITOR</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #000000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Courier New", Courier, monospace;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      border-bottom: 2px solid var(--fg);
+      padding: 1.5rem;
+      text-align: left;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+    }
+
+    .app-layout {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    /* Desktop layout: Left = Preview, Right = Options */
+    @media (min-width: 768px) {
+      .app-layout {
+        flex-direction: row;
+      }
+
+      .preview-section {
+        width: 50%;
+        border-right: 2px solid var(--fg);
+        border-bottom: none !important;
+      }
+
+      .options-section {
+        width: 50%;
+      }
+    }
+
+    .preview-section {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 2px solid var(--fg);
+      background-color: #f0f0f0;
+      min-height: 350px;
+    }
+
+    .canvas-wrapper {
+      width: 100%;
+      height: 100%;
+      max-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--fg);
+      background-color: var(--bg);
+    }
+
+    canvas {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+
+    .options-section {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .block-section {
+      border: 2px solid var(--fg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .block-section legend {
+      font-weight: bold;
+      text-transform: uppercase;
+      padding: 0 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .label-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .btn-file {
+      background: var(--bg);
+      color: var(--fg);
+      padding: 0.85rem;
+      border: 2px solid var(--fg);
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .btn-file:hover {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    /* Checkbox Group Options */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+
+    .custom-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem;
+      border: 1px solid var(--fg);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+      user-select: none;
+    }
+
+    .custom-checkbox:hover {
+      background-color: #f0f0f0;
+    }
+
+    .custom-checkbox input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--fg);
+      background-color: var(--bg);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .custom-checkbox input[type="checkbox"]:checked {
+      background-color: var(--fg);
+    }
+
+    /* Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      background: var(--bg);
+      border: 2px solid var(--fg);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--fg);
+      border: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: var(--fg);
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-action {
+      background: var(--fg);
+      color: var(--bg);
+      border: 2px solid var(--fg);
+      padding: 1rem;
+      font-weight: bold;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    .btn-action:hover {
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    .btn-action:disabled {
+      background: #e0e0e0;
+      color: #888888;
+      border-color: #888888;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>[ WALLPAPER_COMPOSITOR ]</h1>
+  </header>
+
+  <div class="app-layout">
+    
+    <!-- OPTIONS SECTION (First on mobile, Right on desktop) -->
+    <div class="options-section">
+      
+      <fieldset class="block-section">
+        <legend>[01] WALLPAPER</legend>
+        <label for="wallpaper-input" class="btn-file" id="bg-label">UPLOAD_FILE</label>
+        <input type="file" id="wallpaper-input" accept="image/*">
+      </fieldset>
+
+      <fieldset class="block-section">
+        <legend>[02] OVERLAY_SELECTION</legend>
+        <div class="checkbox-group" id="overlay-group">
+          <!-- New 3-1 images on top -->
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/tablepro 3-1.png" checked>
+            tablepro 3-1.png
+          </label>
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/table 3-1.png">
+            table 3-1.png
+          </label>
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/white 3-1.png">
+            white 3-1.png
+          </label>
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/black 3-1.png">
+            black 3-1.png
+          </label>
+
+          <!-- Original images underneath -->
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/white.png">
+            white.png
+          </label>
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/black.png">
+            black.png
+          </label>
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/table.png">
+            table.png
+          </label>
+          <label class="custom-checkbox">
+            <input type="checkbox" name="overlay-opt" data-src="/image/tablepro.png">
+            tablepro.png
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="block-section">
+        <legend>[03] POSITION_Y</legend>
+        <div class="label-header">
+          <span>Y_AXIS</span>
+          <span id="y-value">50%</span>
+        </div>
+        <input type="range" id="y-slider" min="0" max="100" value="50">
+      </fieldset>
+
+      <fieldset class="block-section">
+        <legend>[04] OVERLAY_SCALE</legend>
+        <div class="label-header">
+          <span>SCALE</span>
+          <span id="scale-value">50%</span>
+        </div>
+        <input type="range" id="scale-slider" min="10" max="100" value="50">
+      </fieldset>
+
+      <button id="download-btn" class="btn-action" disabled>EXPORT_IMAGE</button>
+
+    </div>
+
+    <!-- PREVIEW SECTION (Second on mobile, Left on desktop) -->
+    <div class="preview-section">
+      <div class="canvas-wrapper">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const wallpaperInput = document.getElementById('wallpaper-input');
+    const bgLabel = document.getElementById('bg-label');
+    const checkboxes = document.querySelectorAll('#overlay-group input[type="checkbox"]');
+    const ySlider = document.getElementById('y-slider');
+    const yValueDisplay = document.getElementById('y-value');
+    const scaleSlider = document.getElementById('scale-slider');
+    const scaleValueDisplay = document.getElementById('scale-value');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('download-btn');
+
+    let wallpaperImg = null;
+    let overlayImg = new Image();
+    let currentOverlaySrc = '/image/tablepro 3-1.png';
+
+    // Preload initial default overlay
+    loadOverlay(currentOverlaySrc);
+
+    // Wallpaper Upload
+    wallpaperInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      bgLabel.textContent = file.name.toUpperCase();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        wallpaperImg = new Image();
+        wallpaperImg.onload = renderCanvas;
+        wallpaperImg.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Checkbox Exclusive Selection Logic
+    checkboxes.forEach((cb) => {
+      cb.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          checkboxes.forEach((other) => {
+            if (other !== e.target) other.checked = false;
+          });
+          currentOverlaySrc = e.target.getAttribute('data-src');
+          loadOverlay(currentOverlaySrc);
+        } else {
+          // Keep at least one checked
+          e.target.checked = true;
+        }
+      });
+    });
+
+    function loadOverlay(src) {
+      overlayImg = new Image();
+      overlayImg.onload = renderCanvas;
+      overlayImg.src = src;
+    }
+
+    // Sliders
+    ySlider.addEventListener('input', () => {
+      yValueDisplay.textContent = `${ySlider.value}%`;
+      renderCanvas();
+    });
+
+    scaleSlider.addEventListener('input', () => {
+      scaleValueDisplay.textContent = `${scaleSlider.value}%`;
+      renderCanvas();
+    });
+
+    // Render Canvas
+    function renderCanvas() {
+      if (!wallpaperImg) return;
+
+      canvas.width = wallpaperImg.width;
+      canvas.height = wallpaperImg.height;
+
+      // Clear & Draw Base
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(wallpaperImg, 0, 0);
+
+      // Draw Overlay
+      if (overlayImg.complete && overlayImg.naturalWidth !== 0) {
+        const scaleFactor = scaleSlider.value / 100;
+        const overlayWidth = canvas.width * scaleFactor;
+        const overlayHeight = (overlayImg.height / overlayImg.width) * overlayWidth;
+
+        // X = Centered
+        const x = (canvas.width - overlayWidth) / 2;
+
+        // Y = Adjustable
+        const yPercent = ySlider.value / 100;
+        const y = (canvas.height - overlayHeight) * yPercent;
+
+        ctx.drawImage(overlayImg, x, y, overlayWidth, overlayHeight);
+      }
+
+      downloadBtn.disabled = false;
+    }
+
+    // Export
+    downloadBtn.addEventListener('click', () => {
+      if (!wallpaperImg) return;
+
+      const link = document.createElement('a');
+      link.download = 'wallpaper-composite.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  </script>
+</body>
+</html>
